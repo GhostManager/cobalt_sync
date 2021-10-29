@@ -59,10 +59,9 @@ sub oplog::post_command {
     # JSON formatted message
     $data_json = oplog::dictionaryToJson($1);
 
-    $urlobj = [new URL: $url];
-
     try
     {
+        $urlobj = [new URL: $url];
         $con = [$urlobj openConnection];
         [$con setRequestProperty: "User-Agent", "BEACON"];
         [$con setRequestMethod: "POST"];
@@ -78,7 +77,7 @@ sub oplog::post_command {
     }
     catch $exception
     {
-	    println("[-] Oplog Web Exception: " . $exception);
+        println("[-] Oplog Web Exception: " . $exception);
         
         # Since a connection error occurred, log the command to disk for eventual manual upload
         oplog::saveToDisk(%data['start_date'], %data['source_ip'], %data['dest_ip'], %data["user_context"], %data['command'], %data['operator_name'], %data['oplog_id'] ); 
