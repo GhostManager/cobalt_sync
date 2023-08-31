@@ -1,0 +1,23 @@
+version: "3"
+services:
+  cobalt_web:
+    build: ./cobalt_web
+    depends_on:
+      - redis
+    env_file:
+      - .env
+    restart: always
+  cobalt_parser:
+    build: ./cobalt_parser
+    env_file:
+      - .env
+    volumes:
+      - "${COBALT_LOGS_PATH}:/logs"
+    depends_on:
+      - cobalt_web
+    restart: always
+  redis:
+    image: redis:5-alpine
+    restart: always
+    volumes:
+      - "./redis-data:/data"
