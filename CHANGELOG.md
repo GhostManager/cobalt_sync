@@ -9,9 +9,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
-* cobalt_parser is a golang program to parse and monitor Cobalt Strike logs and ship parsed events to a web server
-* cobalt_web is a python web server that accepts cobalt events and posts them to Ghostwriter's v4 GraphQL endpoint
-* redis is a database to store hashes of cobalt messages to prevent duplicates
+* Added `cobalt_parser`, a golang program to parse and monitor Cobalt Strike logs and ship parsed events to a web server
+* Added `cobalt_web`, a Python web server that accepts cobalt events and posts them to Ghostwriter's v4 GraphQL endpoint
+* Added a Redis service container that functions a database to store hashes of Cobalt Strike messages to prevent duplicates
+
+### Changed
+
+* `cobalt_sync` now syncs activities via Ghostwriter's GraphQL API 
+
+### Removed
+
+* Removed use of the legacy Ghostwriter REST API (removed in Ghostwriter v4)
 
 ## [2.0.0] - 11 May 2023
 
