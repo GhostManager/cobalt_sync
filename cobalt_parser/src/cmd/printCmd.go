@@ -22,7 +22,7 @@ func init() {
 		"server",
 		"s",
 		"",
-		`Send new beacon, task, and input events to remote server`,
+		`Send new Beacon, task, and input events to remote server`,
 	)
 	printCmd.Flags().BoolVarP(
 		&printNewToStdout,

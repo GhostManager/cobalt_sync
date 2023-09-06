@@ -21,7 +21,7 @@ func listenForNewLogData(onlyHashes bool, printNewToStdout bool, output string) 
 	var appendFile *os.File
 	var err error
 	if onlyHashes && printNewToStdout && output != "" {
-		// this means that we don't want to save everything in memory, but do want to save it all to disk
+		// This means that we don't want to save everything in memory, but do want to save it all to disk
 		appendFile, err = os.OpenFile(output,
 			os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
 		if err != nil {
@@ -32,7 +32,7 @@ func listenForNewLogData(onlyHashes bool, printNewToStdout bool, output string) 
 	for {
 		select {
 		case h := <-hashChannel:
-			// only record that we've seen something once we get confirmation that it was processed externally
+			// Only record that we've seen something once we get confirmation that it was processed externally
 			hashEvents[h] = 1
 		case b := <-beaconChannel:
 			//fmt.Printf("Got new beacon data: %v\n", b)
@@ -45,15 +45,15 @@ func listenForNewLogData(onlyHashes bool, printNewToStdout bool, output string) 
 				continue
 			}
 			if _, ok := events[b.ID]; !ok {
-				// don't know about this beacon, so add it
+				// We don't know about this Beacon, so add it
 				events[b.ID] = b
-				// now that we know about the beacon, check if there's events waiting to be associated
+				// Now that we know about the Beacon, check if there's events waiting to be associated
 				go emitNewData(b, targetURL, b.Hash)
 				if printNewToStdout {
 					printEvent(b, appendFile)
 				}
 				if _, ok = eventsWaitingForBeaconData[b.ID]; ok {
-					// there are some, so add those to the beacon now
+					// There are some, so add those to the beacon now
 					for _, e := range eventsWaitingForBeaconData[b.ID] {
 						e.SourceIP = b.Internal
 						e.DestIP = b.Internal
@@ -68,9 +68,9 @@ func listenForNewLogData(onlyHashes bool, printNewToStdout bool, output string) 
 				b.Wg.Done()
 				continue
 			}
-			// we've seen this beacon before, so update the data
+			// We've seen this Beacon before, so update the data
 			if b.ParsedTime.After(events[b.ID].ParsedTime) {
-				// only update if this new beacon timestamp is after the one we currently know about
+				// Only update if this new beacon timestamp is after the one we currently know about
 				events[b.ID].OS = b.OS
 				events[b.ID].ParsedTime = b.ParsedTime
 				events[b.ID].StringTime = b.StringTime
@@ -93,16 +93,16 @@ func listenForNewLogData(onlyHashes bool, printNewToStdout bool, output string) 
 			sha256SumString := fmt.Sprintf("%x", sha256Sum)
 			e.Hash = sha256SumString
 			if _, ok := hashEvents[sha256SumString]; !ok {
-				// this is a new event
+				// This is a new event
 				if _, ok = events[e.BeaconID]; !ok {
 					e.Wg.Done()
-					// we got event information before beacon information, save it for later
+					// We got event information before Beacon information, so save it for later
 					if _, ok = eventsWaitingForBeaconData[e.BeaconID]; !ok {
-						// this is the first even we've seen for this beaconID that doesn't exist yet
+						// This is the first even we've seen for this `beaconID` that doesn't exist yet
 						eventsWaitingForBeaconData[e.BeaconID] = []*event{e}
 						continue
 					}
-					// we have seen that beacon id before with other events and still don't have beacon data
+					// We have seen that `beaconId` before with other events and still don't have Beacon data
 					eventsWaitingForBeaconData[e.BeaconID] = append(eventsWaitingForBeaconData[e.BeaconID], e)
 					continue
 				}
@@ -165,7 +165,7 @@ func WalkFiles(verbose bool, filePath string, useWatcher bool) error {
 		if err != nil {
 			return err
 		}
-		// don't parse directories
+		// Don't parse directories
 		if info.IsDir() {
 			if useWatcher && !StringInSlice(info.Name(), ignoredFileNames) {
 				err = watcher.Add(path)
@@ -175,11 +175,11 @@ func WalkFiles(verbose bool, filePath string, useWatcher bool) error {
 			}
 			return nil
 		}
-		// don't parse events, weblog, or downloads
+		// Don't parse events, weblog, or downloads
 		if StringInSlice(info.Name(), ignoredFileNames) {
 			return nil
 		}
-		// only parse remaining .log files
+		// Only parse the remaining .log files
 		if strings.HasSuffix(info.Name(), ".log") {
 			wg.Add(1)
 			if verbose {
@@ -370,7 +370,7 @@ func processLogFileEntry(path string, logFileYear string, wg *sync.WaitGroup, be
 				}
 
 			}
-			// it's possible we detect file modifications before they're done and don't get all the data
+			// It's possible we detect file modifications before they're done and don't get all the data
 			if newBeacon.PID != 0 {
 				beaconChannel <- newBeacon
 				return
@@ -429,7 +429,7 @@ func PrintEvents() {
 func printEvent[V *beacon | *event](p V, appendFile *os.File) {
 	jsonBytes, err := json.Marshal(p)
 	if err != nil {
-		log.Println("[-] Failed to marshal beacon data into JSON: ", err)
+		log.Println("[-] Failed to marshal Beacon data into JSON: ", err)
 		return
 	}
 	if appendFile != nil {

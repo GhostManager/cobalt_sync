@@ -110,8 +110,8 @@ func analyze(cmd *cobra.Command, args []string) {
 	fmt.Println("Total Input events:", inputCount)
 	fmt.Println("Total Task events:", taskCount)
 	fmt.Println("Total Error events:", errorCount)
-	fmt.Println("Hosts with beacons:", beaconHosts)
-	fmt.Println("Accounts with beacons:", userAccounts)
+	fmt.Println("Hosts with Beacons:", beaconHosts)
+	fmt.Println("Accounts with Beacons:", userAccounts)
 	printMap("Total User stats:", userStats)
 	if len(inputCommandsOfInterest) > 0 {
 		printMap("Commands of Interest:", uniqueInputCommands)
@@ -120,10 +120,11 @@ func analyze(cmd *cobra.Command, args []string) {
 		printMap("Errors:", errorEvents)
 	}
 }
+
 func printMap(message string, thing interface{}) {
 	jsonBytes, err := json.MarshalIndent(thing, "", "  ")
 	if err != nil {
-		log.Println("[-] Failed to marshal beacon data into JSON: ", err)
+		log.Println("[-] Failed to marshal Beacon data into JSON: ", err)
 		return
 	}
 	fmt.Println(message, string(jsonBytes))

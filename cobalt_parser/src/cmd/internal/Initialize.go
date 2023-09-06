@@ -58,6 +58,7 @@ func Initialize() {
 	getEventsChannel = make(chan bool, 1)
 	doneGetEventsChannel = make(chan map[string]beacon, 1)
 }
+
 func ListenForLogData(onlyHashes bool, printNewToStdout bool, output string) {
 	go listenForNewLogData(onlyHashes, printNewToStdout, output)
 }

@@ -25,13 +25,13 @@ func ListenForWatcherEvents(verbose bool) {
 				log.Println("[*] Watcher Event:", watcherEvent)
 			}
 			if watcherEvent.Has(fsnotify.Write) || watcherEvent.Has(fsnotify.Create) {
-				// get information about the file/folder
+				// Get information about the file/folder
 				createInfo, err := os.Stat(watcherEvent.Name)
 				if err != nil {
 					log.Println("[-] Failed to get information about modified file/folder")
 					continue
 				}
-				// if it's a folder, watch it
+				// If it's a folder, watch it
 				if createInfo.IsDir() {
 					if verbose {
 						log.Println("[*] added new path to watch", watcherEvent.Name)
@@ -39,7 +39,7 @@ func ListenForWatcherEvents(verbose bool) {
 					watcher.Add(watcherEvent.Name)
 					continue
 				}
-				// if it's a file, make sure it's a good filename and process it
+				// If it's a file, make sure it's a good filename and process it
 				filename := filepath.Base(watcherEvent.Name)
 				if len(filename) == 0 {
 					if verbose {
@@ -83,6 +83,7 @@ func ListenForWatcherEvents(verbose bool) {
 		}
 	}
 }
+
 func PeriodicallyReProcess(verbose bool, logsPath string, onlyHashes bool) {
 	for {
 		if time.Now().Hour() == 0 {

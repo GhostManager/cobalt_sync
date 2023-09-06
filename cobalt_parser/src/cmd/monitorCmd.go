@@ -9,7 +9,7 @@ import (
 
 var monitorCmd = &cobra.Command{
 	Use:   "monitor [logs path]",
-	Short: "monitor logs directory for changes",
+	Short: "Monitor logs directory for changes",
 	Long:  `Run this command to monitor a Cobalt Strike logs directory for changes.`,
 	Run:   monitor,
 	Args:  cobra.ExactArgs(1),
@@ -29,7 +29,7 @@ func init() {
 		"server",
 		"s",
 		"",
-		`Send new beacon, task, and input events to remote server`,
+		`Send new Beacon, task, and input events to remote server`,
 	)
 	monitorCmd.Flags().BoolVarP(
 		&reprocess,

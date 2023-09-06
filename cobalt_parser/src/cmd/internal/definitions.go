@@ -36,6 +36,7 @@ type beacon struct {
 	Events     []*event        `json:"events"`
 	Wg         *sync.WaitGroup `json:"-"`
 }
+
 type event struct {
 	BeaconID    string          `json:"bid"`
 	FilePath    string          `json:"filepath"`
@@ -62,7 +63,7 @@ type RLHTTPClient struct {
 func (c *RLHTTPClient) Do(req *http.Request) (*http.Response, error) {
 	// Comment out the below 5 lines to turn off ratelimiting
 	ctx := context.Background()
-	err := c.Ratelimiter.Wait(ctx) // This is a blocking call. Honors the rate limit
+	err := c.Ratelimiter.Wait(ctx) // This is a blocking call that honors the rate limit
 	if err != nil {
 		return nil, err
 	}

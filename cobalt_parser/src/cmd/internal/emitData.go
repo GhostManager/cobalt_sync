@@ -33,7 +33,7 @@ func emitNewData[V *beacon | *event](b V, url string, hash string) {
 		log.Println("[*] trying to emitNewData")
 		jsonBytes, err := json.Marshal(b)
 		if err != nil {
-			log.Println("[-] Failed to marshal beacon data into JSON: ", err)
+			log.Println("[-] Failed to marshal Beacon data into JSON: ", err)
 			return
 		}
 		for i := 0; i < 10; i++ {
