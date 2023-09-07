@@ -50,7 +50,7 @@ The token must be attached to an account that has access to the project containi
 ## Troubleshooting
 
 - Ensure the team server where `cobalt_sync` is running has network access to Ghostwriter.
-- Ensure the OplogID and OplogAPI key are correct for the provided Ghostwriter URL.
+- Ensure the `GHOSTWRITER_OPLOG_ID` and your `GHOSTWRITER_API_KEY` values are correct for the provided Ghostwriter URL.
 
 ## References
 
