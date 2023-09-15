@@ -4,9 +4,9 @@
 
 [![Python Version](https://img.shields.io/badge/Python-3.10-brightgreen.svg)](.) [![License](https://img.shields.io/badge/License-BSD3-darkred.svg)](.) ![GitHub Release (Latest by Date)](https://img.shields.io/github/v/release/GhostManager/cobalt_sync?label=Latest%20Release) ![GitHub Release Date](https://img.shields.io/github/release-date/GhostManager/cobalt_sync?label=Release%20Date&color=blue)
 
-The `cobalt_sync` utility is a standalone docker compose that connects to an instance of [Ghostwriter](https://github.com/GhostManager/Ghostwriter) (>=v4.0.0) for automated activity logging. 
+The `cobalt_sync` is a standalone utility that connects to an instance of [Ghostwriter](https://github.com/GhostManager/Ghostwriter) (>=v4.0.0) for automated activity logging. 
 
-The current version of `cobalt_sync` requires Ghostwriter >=v4.0..
+The current version of `cobalt_sync` requires Ghostwriter >=v4.0. If you need to use Ghostwriter v3, please use the v1.x releases.
 
 **Authors**: Daniel Heinsen, Andrew Chiles, Cody Thomas, and Christopher Maddalena of SpecterOps
 
@@ -26,11 +26,11 @@ You can get your log's ID by opening the log's webpage and looking at the top of
 
 To generate an API token for your Ghostwriter instance, visit your user profile and click on the "Create" button in the "API Tokens" section.
 
-The token must be attached to an account that has access to the project containing your target oplog. You can read more about the [authorization controls on the Ghostwriter wiki](https://www.ghostwriter.wiki/features/graphql-api/authorization).
+The token must be attached to an account that has access to the project containing your target log. You can read more about the [authorization controls on the Ghostwriter wiki](https://www.ghostwriter.wiki/features/graphql-api/authorization).
 
-### Loading & Configuring via agscript
+### Configuration
 
-1. Modify variables in _.env_ with the appropriate values for your environment.
+1. Modify variables in _.env_ file with the appropriate values for your environment.
 
    ```bash
    GHOSTWRITER_API_KEY=""
@@ -39,12 +39,18 @@ The token must be attached to an account that has access to the project containi
    COBALT_PARSER_COMMAND="monitor /logs -s http://cobalt_web:9000 --onlyHashes --reprocess"
    COBALT_LOGS_PATH="/opt/cobaltstrike/logs"
     ```
+
+   * `GHOSTWRITER_API_KEY` is the API key for your Ghostwriter instance. This is used to authenticate to the GraphQL API.
+   * `GHOSTWRITER_URL` is the URL for your Ghostwriter instance (e.g., _https://ghostwriter.local_). This is used to authenticate to the GraphQL API.
    * `COBALT_LOGS_PATH` is the path to where the logs are that you want to monitor. This folder gets mounted into the `cobalt_sync-cobalt_parser-1` container as `/logs`
-   * `COBALT_PARSER_COMMAND` is the command for the `cobalt-parser` to run inside of the golang container. By default, this monitors the logs directory for changes and syncs all events to the internal `cobalt_web` service that's running. This will also reprocess all the files every night at midnight.
+   * `COBALT_PARSER_COMMAND` is the command for the `cobalt-parser` to run inside the Golang container. By default, this monitors the logs directory for changes and syncs all events to the internal `cobalt_web` service that's running. This will also reprocess all the files every night at midnight.
+
 2. Start docker compose with `sudo docker compose up --build -d` (to stop, run `sudo docker compose down`). To view output, use the following:
+
    * `sudo docker logs --follow cobalt_sync-cobalt_web-1` (viewing the logs of the python web server that posts to Ghostwriter)
    * `sudo docker logs --follow cobalt_sync-cobalt_parser-1` (viewing the logs of the golang file parser and monitor for cobalt strike logs)
    * `sudo docker logs --follow cobalt_sync-redis-1` (viewing the logs of the redis container)
+
 3. Verify a new entry was created in your Ghostwriter activity log. If not, check your Event Log and script console for connection or authentication errors.
 
 ## Troubleshooting
