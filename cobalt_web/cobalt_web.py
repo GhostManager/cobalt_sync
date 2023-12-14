@@ -48,6 +48,17 @@ class CobaltSync:
         """
     )
 
+    # Query for specific oplog entry
+    entry_identifier_query = gql(
+        """
+        query checkEntryIdentifier($entry_identifier: String!, $oplog: bigint!){
+            oplogEntry(where: {oplog: {_eq: $oplog}, entry_identifier: {_eq: $entry_identifier}}, limit: 1){
+                id
+            }
+        }
+        """
+    )
+
     # Query for the first log sent after initialization
     initial_query = gql(
         """
@@ -70,7 +81,7 @@ class CobaltSync:
         mutation InsertCobaltSyncLog (
             $oplog: bigint!, $startDate: timestamptz, $endDate: timestamptz, $sourceIp: String, $destIp: String,
             $tool: String, $userContext: String, $command: String, $description: String,
-            $output: String, $comments: String, $operatorName: String
+            $output: String, $comments: String, $operatorName: String, $entry_identifier: String!
         ) {
             insert_oplogEntry(objects: {
                 oplog: $oplog,
@@ -85,6 +96,7 @@ class CobaltSync:
                 output: $output,
                 comments: $comments,
                 operatorName: $operatorName,
+                entry_identifier: $entry_identifier
             }) {
                 returning { id }
             }
@@ -367,8 +379,18 @@ class CobaltSync:
         if message["event"] == "error":
             return
         gw_message = await self._beacon_to_ghostwriter_message(message)
+        gw_message["entry_identifier"] = hash_data
         result = ""
         try:
+            query_result = await self._execute_query(self.entry_identifier_query, {
+                "oplog": gw_message["oplog"],
+                "entry_identifier": gw_message['entry_identifier'],
+            })
+            if query_result and "oplogEntry" in query_result and len(query_result["oplogEntry"]) > 0:
+                cobalt_sync_log.info(f"Duplicate entry found based on entry_identifier, {gw_message['entry_identifier']}, not sending")
+                # save off id of oplog entry with this gw_message['entry_identifier'] so we don't try to send it again
+                self.rconn.set(hash_data, query_result["oplogEntry"][0]["id"])
+                return
             result = await self._execute_query(self.insert_query, gw_message)
             if result and "insert_oplogEntry" in result:
                 # JSON response example: `{'data': {'insert_oplogEntry': {'returning': [{'id': 192}]}}}`
@@ -394,7 +416,6 @@ class CobaltSync:
 
     async def handle_data(self, data: dict) -> None:
         entry_id = None
-        hash_data = ""
         if data["event"] == "metadata":
             # got a new callback, fetch beacon data and use it to make an entry
             hash_data = data["bid"]
@@ -418,6 +439,7 @@ class CobaltSync:
                 await self._send_webhook(source="cobalt_sync - redis", message=f"Encountered exception connecting to Redis: {e}")
         if entry_id is not None:
             # can't really do updates for CS, so just check if we've seen it and continue
+            cobalt_sync_log.info(f"Duplicate entry found based on hash in redis, {hash_data}, not sending")
             return
         else:
             await self._create_entry(data, hash_data)
