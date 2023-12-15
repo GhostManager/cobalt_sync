@@ -7,6 +7,11 @@ services:
     env_file:
       - .env
     restart: always
+    logging:
+        driver: json-file
+        options:
+            max-file: "1"
+            max-size: 10m
   cobalt_parser:
     build: ./cobalt_parser
     env_file:
@@ -16,6 +21,11 @@ services:
     depends_on:
       - cobalt_web
     restart: always
+    logging:
+        driver: json-file
+        options:
+            max-file: "1"
+            max-size: 10m
   redis:
     image: redis:5-alpine
     restart: always

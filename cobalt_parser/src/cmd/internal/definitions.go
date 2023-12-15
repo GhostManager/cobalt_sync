@@ -53,6 +53,11 @@ type event struct {
 	Wg          *sync.WaitGroup `json:"-"`
 }
 
+type eventWithContext struct {
+	*event
+	Beacon *beacon `json:"beacon"`
+}
+
 // RLHTTPClient Rate Limited HTTP Client
 type RLHTTPClient struct {
 	client      *http.Client
