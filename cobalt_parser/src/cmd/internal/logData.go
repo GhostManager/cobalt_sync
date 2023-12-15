@@ -61,7 +61,10 @@ func listenForNewLogData(onlyHashes bool, printNewToStdout bool, output string) 
 						if !onlyHashes {
 							events[b.ID].Events = append(events[b.ID].Events, e)
 						}
-						go emitNewData(e, targetURL, b.Hash)
+						go emitNewData(&eventWithContext{
+							event:  e,
+							Beacon: b,
+						}, targetURL, b.Hash)
 					}
 					delete(eventsWaitingForBeaconData, b.ID)
 				}
@@ -109,7 +112,10 @@ func listenForNewLogData(onlyHashes bool, printNewToStdout bool, output string) 
 				e.SourceIP = events[e.BeaconID].Internal
 				e.DestIP = events[e.BeaconID].Internal
 				e.UserContext = events[e.BeaconID].User
-				go emitNewData(e, targetURL, e.Hash)
+				go emitNewData(&eventWithContext{
+					event:  e,
+					Beacon: events[e.BeaconID],
+				}, targetURL, e.Hash)
 				if printNewToStdout {
 					printEvent(e, appendFile)
 				}

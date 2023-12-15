@@ -28,7 +28,7 @@ func checkin(url string) {
 	}
 }
 
-func emitNewData[V *beacon | *event](b V, url string, hash string) {
+func emitNewData[V *beacon | *event | *eventWithContext](b V, url string, hash string) {
 	if url != "" {
 		log.Println("[*] trying to emitNewData")
 		jsonBytes, err := json.Marshal(b)
