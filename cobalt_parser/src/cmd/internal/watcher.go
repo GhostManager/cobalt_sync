@@ -33,10 +33,13 @@ func ListenForWatcherEvents(verbose bool) {
 				}
 				// If it's a folder, watch it
 				if createInfo.IsDir() {
-					if verbose {
+					err = watcher.Add(watcherEvent.Name)
+					if err != nil {
+						log.Println("[-] Failed to add new path to watch: ", err)
+					} else if verbose {
 						log.Println("[*] added new path to watch", watcherEvent.Name)
 					}
-					watcher.Add(watcherEvent.Name)
+
 					continue
 				}
 				// If it's a file, make sure it's a good filename and process it

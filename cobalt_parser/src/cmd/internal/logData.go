@@ -33,7 +33,9 @@ func listenForNewLogData(onlyHashes bool, printNewToStdout bool, output string) 
 		select {
 		case h := <-hashChannel:
 			// Only record that we've seen something once we get confirmation that it was processed externally
-			hashEvents[h] = 1
+			//hashEvents[h] = 1
+			// we didn't get a successful send, so remove it so we can reprocess it later
+			delete(hashEvents, h)
 		case b := <-beaconChannel:
 			//fmt.Printf("Got new beacon data: %v\n", b)
 			eventString := fmt.Sprintf("%s-%s", b.ID, b.StringTime)
@@ -44,6 +46,8 @@ func listenForNewLogData(onlyHashes bool, printNewToStdout bool, output string) 
 				b.Wg.Done()
 				continue
 			}
+			// save off that we've seen this event
+			hashEvents[sha256SumString] = 1
 			if _, ok := events[b.ID]; !ok {
 				// We don't know about this Beacon, so add it
 				events[b.ID] = b
@@ -97,6 +101,8 @@ func listenForNewLogData(onlyHashes bool, printNewToStdout bool, output string) 
 			e.Hash = sha256SumString
 			if _, ok := hashEvents[sha256SumString]; !ok {
 				// This is a new event
+				// save off that we've seen this event
+				hashEvents[sha256SumString] = 1
 				if _, ok = events[e.BeaconID]; !ok {
 					e.Wg.Done()
 					// We got event information before Beacon information, so save it for later
