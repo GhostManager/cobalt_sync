@@ -29,11 +29,13 @@ func checkin(url string) {
 }
 
 func emitNewData[V *beacon | *event | *eventWithContext](b V, url string, hash string) {
+	// submit to hashChannel if we fail to send it so we can try again later
 	if url != "" {
 		log.Println("[*] trying to emitNewData")
 		jsonBytes, err := json.Marshal(b)
 		if err != nil {
-			log.Println("[-] Failed to marshal Beacon data into JSON: ", err)
+			log.Println("[-] Failed to marshal Beacon data into JSON: ", err, hash)
+			hashChannel <- hash
 			return
 		}
 		for i := 0; i < 10; i++ {
@@ -48,11 +50,13 @@ func emitNewData[V *beacon | *event | *eventWithContext](b V, url string, hash s
 				log.Println("[-] error resp.StatusCode: ", resp.StatusCode)
 				time.Sleep(10 * time.Second)
 			} else {
-				hashChannel <- hash
+				// successfully sent it out, move on
+				log.Println("[+] successfully sent data to cobalt_web: ", hash)
 				return
 			}
 		}
-	} else {
+		// tried 10 times and couldn't send, give up and let it re-process later
+		log.Println("[-] giving up after 10 fails to send data to cobalt_web: ", hash)
 		hashChannel <- hash
 	}
 }
