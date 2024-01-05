@@ -8,7 +8,7 @@ var (
 	//   -X 'github.com/GhostManager/cobalt_sync/cmd/config.Version=`git describe --tags --abbrev=0`' \
 	//   -X 'github.com/GhostManager/cobalt_sync/cmd/config.BuildDate=`date -u '+%d %b %Y'`'" \
 	//   -o ghostwriter-cli main.go
-	Version     string = "v0.1.0"
+	Version     string = "v2.0.3"
 	BuildDate   string
 	Name        string = "Cobalt Parser"
 	DisplayName string = "Cobalt Parser"

@@ -28,7 +28,7 @@ logging.basicConfig(
 cobalt_sync_log = logging.getLogger("cobalt_sync_logger")
 cobalt_sync_log.setLevel(logging.DEBUG)
 
-VERSION = "1.0.1"
+VERSION = "1.0.2"
 
 
 class CobaltSync:
