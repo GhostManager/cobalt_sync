@@ -428,7 +428,7 @@ class CobaltSync:
                 )
                 await self._send_webhook(source="cobalt_sync - redis", message=f"Encountered exception connecting to Redis: {e}")
         else:
-            hash_data = await self._get_hash(json.dumps(data))
+            hash_data = await self._get_hash(json.dumps(data, sort_keys=True))
             try:
                 entry_id = self.rconn.get(hash_data)
             except Exception as e:
