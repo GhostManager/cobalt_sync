@@ -348,14 +348,29 @@ func processLogFileEntry(path string, logFileYear string, wg *sync.WaitGroup, be
 			for _, entry := range metadataPieces {
 				if strings.Contains(entry, " <- ") {
 					ips := strings.Split(entry, " <- ")
+					if len(ips) != 2 {
+						log.Println("[-] Failed to process metadata with regex:", entry)
+						wg.Done()
+						return
+					}
 					newBeacon.Internal = ips[1]
 					newBeacon.External = ips[0]
 				} else if strings.Contains(entry, " -> ") {
 					ips := strings.Split(entry, " -> ")
+					if len(ips) != 2 {
+						log.Println("[-] Failed to process metadata with regex:", entry)
+						wg.Done()
+						return
+					}
 					newBeacon.Internal = ips[1]
 					newBeacon.External = ips[0]
 				} else {
 					entryPieces := strings.Split(entry, ":")
+					if len(entryPieces) != 2 {
+						log.Println("[-] Failed to process metadata with regex:", entry)
+						wg.Done()
+						return
+					}
 					switch strings.TrimSpace(entryPieces[0]) {
 					case "computer":
 						newBeacon.Computer = strings.TrimSpace(entryPieces[1])
