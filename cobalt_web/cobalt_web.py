@@ -218,7 +218,7 @@ class CobaltSync:
                     await asyncio.sleep(self.wait_timeout)
                     continue
                 except TransportQueryError as e:
-                    cobalt_sync_log.exception("Error encountered while fetching GraphQL schema: %s", e)
+                    cobalt_sync_log.error("Error encountered while fetching GraphQL schema: %s", e)
                     payload = e.errors[0]
                     if "extensions" in payload:
                         if "code" in payload["extensions"]:
@@ -233,13 +233,14 @@ class CobaltSync:
                     await asyncio.sleep(self.wait_timeout)
                     continue
                 except GraphQLError as e:
-                    cobalt_sync_log.exception("Error with GraphQL query: %s", e)
+                    cobalt_sync_log.error("Error with GraphQL query: %s", e)
                     await self._send_webhook(source="cobalt_sync - ghostwriter", message=f"Graphql Error: {e}")
                     await asyncio.sleep(self.wait_timeout)
                     continue
             except Exception as exc:
-                cobalt_sync_log.exception(
-                    "Exception occurred while trying to post the query to Ghostwriter! Trying again in %s seconds...",
+                cobalt_sync_log.error(
+                    "Exception occurred while trying to post the query to Ghostwriter! %s\n Trying again in %s seconds...",
+                    exc,
                     self.wait_timeout
                 )
                 await self._send_webhook(source="cobalt_sync - ghostwriter", message=f"Failed to post to ghostwriter: {exc}")
@@ -359,7 +360,7 @@ class CobaltSync:
                 gw_message["comments"] = ",".join(message["mitre"])
                 gw_message["operatorName"] = message["operator"]
         except Exception as e:
-            cobalt_sync_log.exception(
+            cobalt_sync_log.error(
                 "Encountered an exception while processing Cobalt Strike's message into a message for Ghostwriter! Received message: %s",
                 message
             )
@@ -403,7 +404,7 @@ class CobaltSync:
                 )
                 await self._send_webhook(source="cobalt_sync - ghostwriter", message=f"Encountered exception creating an entry: {result}")
         except Exception as e:
-            cobalt_sync_log.exception(
+            cobalt_sync_log.error(
                 "Encountered an exception while trying to create a new log entry! Response from Ghostwriter: %s",
                 result,
             )
@@ -460,7 +461,7 @@ class CobaltSync:
         try:
             if level == "error":
                 if datetime.utcnow() - self.last_error_timestamp < self.last_error_delta:
-                    cobalt_sync_log.error(f"[-] not emitting error to slack due to threshold limits")
+                    cobalt_sync_log.error(f"[-] not emitting error to slack due to threshold limits: {datetime.utcnow() - self.last_error_timestamp} < {self.last_error_delta}. Last error reported at {self.last_error_timestamp}.")
                     return
                 self.last_error_timestamp = datetime.utcnow()
             if self.SLACK_WEBHOOK_URL is None or self.SLACK_WEBHOOK_URL == "":
@@ -511,7 +512,7 @@ class CobaltSync:
                     else:
                         cobalt_sync_log.error(f"[-] Failed to send webhook message: {resp}")
         except Exception as e:
-            cobalt_sync_log.exception(f"[-] Failed to send webhook: {e}")
+            cobalt_sync_log.error(f"[-] Failed to send webhook: {e}")
 
 
 connector = CobaltSync()
