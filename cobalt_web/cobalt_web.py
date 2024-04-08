@@ -52,7 +52,7 @@ class CobaltSync:
     entry_identifier_query = gql(
         """
         query checkEntryIdentifier($entry_identifier: String!, $oplog: bigint!){
-            oplogEntry(where: {oplog: {_eq: $oplog}, entry_identifier: {_eq: $entry_identifier}}, limit: 1){
+            oplogEntry(where: {oplog: {_eq: $oplog}, entryIdentifier: {_eq: $entry_identifier}}, limit: 1){
                 id
             }
         }
@@ -62,12 +62,13 @@ class CobaltSync:
     # Query for the first log sent after initialization
     initial_query = gql(
         """
-        mutation InitializeCobaltSync ($oplogId: bigint!, $description: String!, $server: String!) {
+        mutation InitializeCobaltSync ($oplogId: bigint!, $description: String!, $server: String!, $extraFields: jsonb!) {
             insert_oplogEntry(objects: {
                 oplog: $oplogId,
                 description: $description,
                 sourceIp: $server,
                 tool: "Cobalt Strike",
+                extraFields: $extraFields
             }) {
                 returning { id }
             }
@@ -81,7 +82,7 @@ class CobaltSync:
         mutation InsertCobaltSyncLog (
             $oplog: bigint!, $startDate: timestamptz, $endDate: timestamptz, $sourceIp: String, $destIp: String,
             $tool: String, $userContext: String, $command: String, $description: String,
-            $output: String, $comments: String, $operatorName: String, $entry_identifier: String!
+            $output: String, $comments: String, $operatorName: String, $entry_identifier: String!, $extraFields: jsonb!
         ) {
             insert_oplogEntry(objects: {
                 oplog: $oplog,
@@ -96,7 +97,8 @@ class CobaltSync:
                 output: $output,
                 comments: $comments,
                 operatorName: $operatorName,
-                entry_identifier: $entry_identifier
+                entryIdentifier: $entry_identifier,
+                extraFields: $extraFields
             }) {
                 returning { id }
             }
@@ -218,7 +220,7 @@ class CobaltSync:
                     await asyncio.sleep(self.wait_timeout)
                     continue
                 except TransportQueryError as e:
-                    cobalt_sync_log.exception("Error encountered while fetching GraphQL schema: %s", e)
+                    cobalt_sync_log.error("Error encountered while fetching GraphQL schema: %s", e)
                     payload = e.errors[0]
                     if "extensions" in payload:
                         if "code" in payload["extensions"]:
@@ -233,13 +235,14 @@ class CobaltSync:
                     await asyncio.sleep(self.wait_timeout)
                     continue
                 except GraphQLError as e:
-                    cobalt_sync_log.exception("Error with GraphQL query: %s", e)
+                    cobalt_sync_log.error("Error with GraphQL query: %s", e)
                     await self._send_webhook(source="cobalt_sync - ghostwriter", message=f"Graphql Error: {e}")
                     await asyncio.sleep(self.wait_timeout)
                     continue
             except Exception as exc:
-                cobalt_sync_log.exception(
-                    "Exception occurred while trying to post the query to Ghostwriter! Trying again in %s seconds...",
+                cobalt_sync_log.error(
+                    "Exception occurred while trying to post the query to Ghostwriter! %s\n Trying again in %s seconds...",
+                    exc,
                     self.wait_timeout
                 )
                 await self._send_webhook(source="cobalt_sync - ghostwriter", message=f"Failed to post to ghostwriter: {exc}")
@@ -268,6 +271,7 @@ class CobaltSync:
             "description": f"Initial entry from cobalt_sync. If you're seeing this then oplog "
                            f"syncing is working for this C2 server!",
             "server": f"Cobalt Strike Server",
+            "extraFields": {}
         }
         await self._execute_query(self.initial_query, variable_values)
         cobalt_sync_log.info("Sending slack message for checkin awareness")
@@ -285,7 +289,9 @@ class CobaltSync:
         ``message``
             The message dictionary to be converted
         """
-        gw_message = {}
+        gw_message = {
+            "extraFields": {}
+        }
         try:
             gw_message["oplog"] = self.GHOSTWRITER_OPLOG_ID
             gw_message["tool"] = "beacon"
@@ -359,7 +365,7 @@ class CobaltSync:
                 gw_message["comments"] = ",".join(message["mitre"])
                 gw_message["operatorName"] = message["operator"]
         except Exception as e:
-            cobalt_sync_log.exception(
+            cobalt_sync_log.error(
                 "Encountered an exception while processing Cobalt Strike's message into a message for Ghostwriter! Received message: %s",
                 message
             )
@@ -403,7 +409,7 @@ class CobaltSync:
                 )
                 await self._send_webhook(source="cobalt_sync - ghostwriter", message=f"Encountered exception creating an entry: {result}")
         except Exception as e:
-            cobalt_sync_log.exception(
+            cobalt_sync_log.error(
                 "Encountered an exception while trying to create a new log entry! Response from Ghostwriter: %s",
                 result,
             )
@@ -460,7 +466,7 @@ class CobaltSync:
         try:
             if level == "error":
                 if datetime.utcnow() - self.last_error_timestamp < self.last_error_delta:
-                    cobalt_sync_log.error(f"[-] not emitting error to slack due to threshold limits")
+                    cobalt_sync_log.error(f"[-] not emitting error to slack due to threshold limits: {datetime.utcnow() - self.last_error_timestamp} < {self.last_error_delta}. Last error reported at {self.last_error_timestamp}.")
                     return
                 self.last_error_timestamp = datetime.utcnow()
             if self.SLACK_WEBHOOK_URL is None or self.SLACK_WEBHOOK_URL == "":
@@ -511,7 +517,7 @@ class CobaltSync:
                     else:
                         cobalt_sync_log.error(f"[-] Failed to send webhook message: {resp}")
         except Exception as e:
-            cobalt_sync_log.exception(f"[-] Failed to send webhook: {e}")
+            cobalt_sync_log.error(f"[-] Failed to send webhook: {e}")
 
 
 connector = CobaltSync()
