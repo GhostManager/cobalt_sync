@@ -52,7 +52,7 @@ class CobaltSync:
     entry_identifier_query = gql(
         """
         query checkEntryIdentifier($entry_identifier: String!, $oplog: bigint!){
-            oplogEntry(where: {oplog: {_eq: $oplog}, entry_identifier: {_eq: $entry_identifier}}, limit: 1){
+            oplogEntry(where: {oplog: {_eq: $oplog}, entryIdentifier: {_eq: $entry_identifier}}, limit: 1){
                 id
             }
         }
@@ -62,12 +62,13 @@ class CobaltSync:
     # Query for the first log sent after initialization
     initial_query = gql(
         """
-        mutation InitializeCobaltSync ($oplogId: bigint!, $description: String!, $server: String!) {
+        mutation InitializeCobaltSync ($oplogId: bigint!, $description: String!, $server: String!, $extraFields: jsonb!) {
             insert_oplogEntry(objects: {
                 oplog: $oplogId,
                 description: $description,
                 sourceIp: $server,
                 tool: "Cobalt Strike",
+                extraFields: $extraFields
             }) {
                 returning { id }
             }
@@ -81,7 +82,7 @@ class CobaltSync:
         mutation InsertCobaltSyncLog (
             $oplog: bigint!, $startDate: timestamptz, $endDate: timestamptz, $sourceIp: String, $destIp: String,
             $tool: String, $userContext: String, $command: String, $description: String,
-            $output: String, $comments: String, $operatorName: String, $entry_identifier: String!
+            $output: String, $comments: String, $operatorName: String, $entry_identifier: String!, $extraFields: jsonb!
         ) {
             insert_oplogEntry(objects: {
                 oplog: $oplog,
@@ -96,7 +97,8 @@ class CobaltSync:
                 output: $output,
                 comments: $comments,
                 operatorName: $operatorName,
-                entry_identifier: $entry_identifier
+                entryIdentifier: $entry_identifier,
+                extraFields: $extraFields
             }) {
                 returning { id }
             }
@@ -269,6 +271,7 @@ class CobaltSync:
             "description": f"Initial entry from cobalt_sync. If you're seeing this then oplog "
                            f"syncing is working for this C2 server!",
             "server": f"Cobalt Strike Server",
+            "extraFields": {}
         }
         await self._execute_query(self.initial_query, variable_values)
         cobalt_sync_log.info("Sending slack message for checkin awareness")
@@ -286,7 +289,9 @@ class CobaltSync:
         ``message``
             The message dictionary to be converted
         """
-        gw_message = {}
+        gw_message = {
+            "extraFields": {}
+        }
         try:
             gw_message["oplog"] = self.GHOSTWRITER_OPLOG_ID
             gw_message["tool"] = "beacon"
