@@ -37,7 +37,7 @@ The token must be attached to an account that has access to the project containi
    GHOSTWRITER_URL=""
    GHOSTWRITER_OPLOG_ID=""
    COBALT_PARSER_COMMAND="monitor /logs -s http://cobalt_web:9000 --onlyHashes --reprocess"
-   COBALT_LOGS_PATH="/opt/cobaltstrike/logs"
+   COBALT_LOGS_PATH="/opt/cobaltstrike/server/logs"
     ```
 
    * `GHOSTWRITER_API_KEY` is the API key for your Ghostwriter instance. This is used to authenticate to the GraphQL API.
