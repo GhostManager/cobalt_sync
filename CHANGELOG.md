@@ -5,6 +5,14 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.0.5] - 01 December 2025
+
+### Changed
+
+* Updated the cobalt_parser to handle new <task val> fields in Cobalt Strike 4.12 logs
+* Updated the cobalt_web to create tags in Ghostwriter based on the MITRE fields from Cobalt Strike logs
+* Updated the cobalt_web to set the new task identifiers from CS4.12 in the output field in Ghostwriter logs
+
 ## [2.0.4] - 08 April 2024
 
 ### Changed

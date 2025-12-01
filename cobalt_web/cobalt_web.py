@@ -28,7 +28,7 @@ logging.basicConfig(
 cobalt_sync_log = logging.getLogger("cobalt_sync_logger")
 cobalt_sync_log.setLevel(logging.DEBUG)
 
-VERSION = "1.0.2"
+VERSION = "2.0.5"
 
 
 class CobaltSync:
@@ -131,6 +131,16 @@ class CobaltSync:
                 operatorName: $operatorName,
             }) {
                 returning { id }
+            }
+        }
+        """
+    )
+
+    addTags_mutation = gql(
+        """
+        mutation AddTagsCobaltSyncLog ( $id: bigint!, $model: String!, $tags: [String!]!){
+            setTags(id: $id, model: $model, tags: $tags){
+                tags
             }
         }
         """
@@ -346,6 +356,7 @@ class CobaltSync:
                     SourceIP    string    `json:"source_ip"`
                     DestIP      string    `json:"dest_ip"`
                     UserContext string    `json:"user_context"`
+                    TaskID      string          `json:"task_id"`
                 }
                 """
                 gw_message["startDate"] = message["parsed_time"]
@@ -361,7 +372,7 @@ class CobaltSync:
                     gw_message["description"] = f"PID: {message['beacon']['pid']}, Callback: {message['bid']}"
                 else:
                     gw_message["description"] = f"Callback: {message['bid']}"
-                gw_message["output"] = ""
+                gw_message["output"] = f"Task: {message['task_id']}"
                 gw_message["comments"] = ",".join(message["mitre"])
                 gw_message["operatorName"] = message["operator"]
         except Exception as e:
@@ -396,11 +407,27 @@ class CobaltSync:
                 cobalt_sync_log.info(f"Duplicate entry found based on entry_identifier, {gw_message['entry_identifier']}, not sending")
                 # save off id of oplog entry with this gw_message['entry_identifier'] so we don't try to send it again
                 self.rconn.set(hash_data, query_result["oplogEntry"][0]["id"])
+                cobalt_sync_log.info(f"checking for mitre tags now: {message}")
+                if "mitre" in message and len(message["mitre"]) > 0:
+                    add_tags = await self._execute_query(self.addTags_mutation, {
+                        "id": query_result["oplogEntry"][0]["id"],
+                        "model": "oplog_entry",
+                        "tags": [f"ATT&CK:{t}" for t in message["mitre"]]
+                    })
+                    cobalt_sync_log.info(f"added tags: {add_tags}")
                 return
             result = await self._execute_query(self.insert_query, gw_message)
             if result and "insert_oplogEntry" in result:
                 # JSON response example: `{'data': {'insert_oplogEntry': {'returning': [{'id': 192}]}}}`
                 self.rconn.set(hash_data, result["insert_oplogEntry"]["returning"][0]["id"])
+                cobalt_sync_log.info(f"checking for mitre tags now after successful insert: {message}")
+                if "mitre" in message and len(message["mitre"]) > 0:
+                    add_tags = await self._execute_query(self.addTags_mutation, {
+                        "id": result["insert_oplogEntry"]["returning"][0]["id"],
+                        "model": "oplog_entry",
+                        "tags":  [f"ATT&CK:{t}" for t in message["mitre"]]
+                    })
+                    cobalt_sync_log.info("added tags: %s", add_tags)
                 pass
             else:
                 cobalt_sync_log.info(

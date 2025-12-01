@@ -94,8 +94,8 @@ func listenForNewLogData(onlyHashes bool, printNewToStdout bool, output string) 
 			b.Wg.Done()
 		case e := <-eventChannel:
 			//fmt.Printf("Got new event data: %v\n", e)
-			eventString := fmt.Sprintf("%s-%s-%s-%s-%s",
-				e.BeaconID, e.StringTime, e.Event, e.Operator, e.Message)
+			eventString := fmt.Sprintf("%s-%s-%s-%s-%s-%s",
+				e.BeaconID, e.StringTime, e.Event, e.Operator, e.Message, e.TaskID)
 			sha256Sum := sha256.Sum256([]byte(eventString))
 			sha256SumString := fmt.Sprintf("%x", sha256Sum)
 			e.Hash = sha256SumString
@@ -261,7 +261,7 @@ func processLogFileEntry(path string, logFileYear string, wg *sync.WaitGroup, be
 		if timeAndTypeRegexMatches[2] == "input" {
 			//log.Println(content)
 			findInputSubmatches := inputRegEx.FindStringSubmatch(content)
-			if len(findInputSubmatches) != 5 {
+			if len(findInputSubmatches) != 6 {
 				log.Println("[-] Failed to process input with regex:", content)
 				wg.Done()
 				return
@@ -279,7 +279,8 @@ func processLogFileEntry(path string, logFileYear string, wg *sync.WaitGroup, be
 				ParsedTime: parsedTime,
 				Event:      timeAndTypeRegexMatches[2],
 				Operator:   findInputSubmatches[3],
-				Message:    findInputSubmatches[4],
+				TaskID:     findInputSubmatches[4],
+				Message:    findInputSubmatches[5],
 				MITRE:      []string{},
 				Wg:         wg,
 			}
@@ -289,8 +290,8 @@ func processLogFileEntry(path string, logFileYear string, wg *sync.WaitGroup, be
 		} else if timeAndTypeRegexMatches[2] == "task" {
 			//log.Println(content)
 			findTaskSubmatches := taskRegEx.FindStringSubmatch(content)
-			if len(findTaskSubmatches) != 5 {
-				log.Println("[-] Failed to process task with regex:", content)
+			if len(findTaskSubmatches) != 7 {
+				fmt.Printf("[-] Failed to process task with regex (%s) and matches (%v)\n", content, findTaskSubmatches)
 				wg.Done()
 				return
 			}
@@ -300,7 +301,7 @@ func processLogFileEntry(path string, logFileYear string, wg *sync.WaitGroup, be
 				wg.Done()
 				return
 			}
-			mitrePieces := strings.Split(findTaskSubmatches[3], ", ")
+			mitrePieces := strings.Split(findTaskSubmatches[4], ", ")
 			mitreWithoutEmpty := []string{}
 			for _, mitre := range mitrePieces {
 				if mitre != "" {
@@ -313,9 +314,10 @@ func processLogFileEntry(path string, logFileYear string, wg *sync.WaitGroup, be
 				StringTime: findTaskSubmatches[1],
 				ParsedTime: parsedTime,
 				Event:      timeAndTypeRegexMatches[2],
-				Operator:   "",
+				Operator:   findTaskSubmatches[3],
 				MITRE:      mitreWithoutEmpty,
-				Message:    findTaskSubmatches[4],
+				TaskID:     findTaskSubmatches[5],
+				Message:    findTaskSubmatches[6],
 				Wg:         wg,
 			}
 			eventChannel <- e
@@ -404,7 +406,7 @@ func processLogFileEntry(path string, logFileYear string, wg *sync.WaitGroup, be
 			}
 		} else if timeAndTypeRegexMatches[2] == "error" {
 			findErrorMatches := errorRegEx.FindStringSubmatch(content)
-			if len(findErrorMatches) != 4 {
+			if len(findErrorMatches) != 5 {
 				log.Println("[-] Failed to process error with regex:", content)
 				wg.Done()
 				return
@@ -423,7 +425,8 @@ func processLogFileEntry(path string, logFileYear string, wg *sync.WaitGroup, be
 				Event:      timeAndTypeRegexMatches[2],
 				Operator:   "",
 				MITRE:      []string{},
-				Message:    findErrorMatches[3],
+				TaskID:     findErrorMatches[3],
+				Message:    findErrorMatches[4],
 				Wg:         wg,
 			}
 			eventChannel <- e
