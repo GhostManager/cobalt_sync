@@ -3,18 +3,33 @@ package internal
 // @its_a_feature_ 8/30/2023
 import (
 	"context"
-	"golang.org/x/time/rate"
 	"net/http"
 	"regexp"
 	"sync"
 	"time"
+
+	"golang.org/x/time/rate"
 )
 
 var timeAndTypeRegex = regexp.MustCompile(`^(?P<timestamp>\d{2}\/\d{2} \d{2}:\d{2}:\d{2} UTC) \[(?P<method>.*?)\]`)
-var inputRegEx = regexp.MustCompile(`^(?P<timestamp>\d{2}\/\d{2} \d{2}:\d{2}:\d{2} UTC) \[(?P<method>.*?)\] [<,\x{003C}](?P<user>.*?)[>,\x{003E}] (?P<input>.*)`)
-var taskRegEx = regexp.MustCompile(`^(?P<timestamp>\d{2}\/\d{2} \d{2}:\d{2}:\d{2} UTC) \[(?P<method>.*?)\] [<,\x{003C}](?P<mitre>[T*\d*\.*\d*,* *]*?)[>,\x{003E}] (?P<task>.*)`)
+
+// 11/26 21:19:49 UTC [input] <its_a_feature_> <task 2b587bb952a76505> upload
+var inputRegEx = regexp.MustCompile(`^(?P<timestamp>\d{2}\/\d{2} \d{2}:\d{2}:\d{2} UTC) \[(?P<method>.*?)\] [<,\x{003C}](?P<user>.*?)[>,\x{003E}] [<,\x{003C}]task (?P<taskID>.*?)[>,\x{003E}] (?P<input>.*)`)
+
+// 11/26 21:19:52 UTC [task] <its_a_feature_> <task 2b587bb952a76505> Tasked beacon to upload /home/user/Desktop/beacon_smb_x64.exe as beacon_smb_x64.exe
+// 11/26 21:58:33 UTC [task] <its_a_feature_> <T1018, T1093> <task 18f219cfc9e4bdc> Tasked beacon to run net view
+var taskRegEx = regexp.MustCompile(`^(?P<timestamp>\d{2}\/\d{2} \d{2}:\d{2}:\d{2} UTC) \[(?P<method>.*?)\] [<,\x{003C}](?P<user>.*?)[>,\x{003E}] ?[<,\x{003C}]?(?P<mitre>[T*\d*\.*\d*,* *]*?)?[>,\x{003E}]? [<,\x{003C}]task (?P<taskID>.*?)[>,\x{003E}] (?P<task>.*)`)
+
+// 11/26 21:04:56 UTC [metadata] ExternalIP <- InternalIP; computer: ComputerA; user: Administrator *; process: beacon.exe; pid: 7116; os: Windows; version: 6.2; build:
+// 9200; beacon arch: x64 (x64)
+// 11/26 21:20:26 UTC [metadata] beacon_663277710 -> InternalIP; computer: ComputerA; user: Administrator *; process: beacon_smb_x64.exe; pid: 4848; os: Windows; version: 6
+// .2; build: 9200; beacon arch: x64 (x64)
+// 11/26 21:57:26 UTC [metadata] beacon_1221499242 -> InternalIP; computer: ComputerA; user: SYSTEM *; process: rundll32.exe; pid: 5652; os: Windows; version: 10.0; build:
+// 20348; beacon arch: x64 (x64)
 var metadataRegEx = regexp.MustCompile(`^(?P<timestamp>\d{2}\/\d{2} \d{2}:\d{2}:\d{2} UTC) \[(?P<method>.*?)\] (?P<metadata>.*)`)
-var errorRegEx = regexp.MustCompile(`^(?P<timestamp>\d{2}\/\d{2} \d{2}:\d{2}:\d{2} UTC) \[(?P<method>.*?)\] (?P<error>.*)`)
+
+// 11/26 21:59:17 UTC [error] <task 182dca1f117ef4aa> Could not connect to pipe: 2 - ERROR_FILE_NOT_FOUND
+var errorRegEx = regexp.MustCompile(`^(?P<timestamp>\d{2}\/\d{2} \d{2}:\d{2}:\d{2} UTC) \[(?P<method>.*?)\] [<,\x{003C}]task (?P<taskID>.*?)[>,\x{003E}] (?P<error>.*)`)
 
 type beacon struct {
 	Event      string          `json:"event"`
@@ -50,6 +65,7 @@ type event struct {
 	SourceIP    string          `json:"source_ip"`
 	DestIP      string          `json:"dest_ip"`
 	UserContext string          `json:"user_context"`
+	TaskID      string          `json:"task_id"`
 	Wg          *sync.WaitGroup `json:"-"`
 }
 
