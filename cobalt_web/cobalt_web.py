@@ -425,10 +425,9 @@ class CobaltSync:
                     add_tags = await self._execute_query(self.addTags_mutation, {
                         "id": result["insert_oplogEntry"]["returning"][0]["id"],
                         "model": "oplog_entry",
-                        "tags":  [f"ATT&CK:{t}" for t in message["mitre"]]
+                        "tags": [f"ATT&CK:{t}" for t in message["mitre"]]
                     })
                     cobalt_sync_log.info("added tags: %s", add_tags)
-                pass
             else:
                 cobalt_sync_log.info(
                     "Did not receive a response with data from Ghostwriter's GraphQL API! Response: %s",
