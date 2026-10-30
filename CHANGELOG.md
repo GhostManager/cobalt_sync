@@ -5,6 +5,14 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.0.6] - 30 October 2026
+
+### Changed
+
+* Updated the code to flush the response buffer and close the response body for all requests
+* Updated the rate limiter to use the configured http client with limits
+* Adjusted the rate limiter to a max of 10 with a burst of 50
+
 ## [2.0.5] - 01 December 2025
 
 ### Changed

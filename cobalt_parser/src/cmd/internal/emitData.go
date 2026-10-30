@@ -4,6 +4,7 @@ package internal
 import (
 	"bytes"
 	"encoding/json"
+	"io"
 	"log"
 	"net/http"
 	"time"
@@ -13,7 +14,15 @@ func checkin(url string) {
 	if url != "" {
 		for {
 			req, err := http.NewRequest("GET", url, nil)
+			if err != nil {
+				log.Println("[-] Invalid check-in URL:", err)
+				return
+			}
 			resp, err := client.Do(req)
+			if err == nil {
+				_, err = io.Copy(io.Discard, resp.Body)
+				resp.Body.Close()
+			}
 			if err != nil {
 				log.Println("[-] Error checking in:", err)
 			} else if resp.StatusCode != 200 {
@@ -29,7 +38,7 @@ func checkin(url string) {
 }
 
 func emitNewData[V *beacon | *event | *eventWithContext](b V, url string, hash string) {
-	// submit to hashChannel if we fail to send it so we can try again later
+	// Retry delivery errors with a delay; release the hash for malformed events or URLs.
 	if url != "" {
 		log.Println("[*] trying to emitNewData")
 		jsonBytes, err := json.Marshal(b)
@@ -38,9 +47,18 @@ func emitNewData[V *beacon | *event | *eventWithContext](b V, url string, hash s
 			hashChannel <- hash
 			return
 		}
-		for i := 0; i < 10; i++ {
+		for {
 			req, err := http.NewRequest("POST", url, bytes.NewBuffer(jsonBytes))
+			if err != nil {
+				log.Println("[-] Invalid delivery URL:", err)
+				hashChannel <- hash
+				return
+			}
 			resp, err := limitingHTTPClient.Do(req)
+			if err == nil {
+				_, err = io.Copy(io.Discard, resp.Body)
+				resp.Body.Close()
+			}
 			if err != nil {
 				log.Println("[-] error client.Do: ", err)
 				time.Sleep(10 * time.Second)
@@ -55,9 +73,6 @@ func emitNewData[V *beacon | *event | *eventWithContext](b V, url string, hash s
 				return
 			}
 		}
-		// tried 10 times and couldn't send, give up and let it re-process later
-		log.Println("[-] giving up after 10 fails to send data to cobalt_web: ", hash)
-		hashChannel <- hash
 	}
 }
 
