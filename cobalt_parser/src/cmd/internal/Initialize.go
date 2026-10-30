@@ -2,7 +2,6 @@ package internal
 
 // @its_a_feature_ 8/30/2023
 import (
-	"crypto/tls"
 	"log"
 	"net"
 	"net/http"
@@ -28,8 +27,6 @@ var tr = &http.Transport{
 		Timeout:   5 * time.Second,
 		KeepAlive: 30 * time.Second,
 	}).DialContext,
-	TLSClientConfig:     &tls.Config{InsecureSkipVerify: true},
-	TLSHandshakeTimeout: 10 * time.Second,
 	MaxIdleConns:        10,
 	MaxIdleConnsPerHost: 10,
 	MaxConnsPerHost:     10,

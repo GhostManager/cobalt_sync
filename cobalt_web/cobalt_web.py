@@ -35,6 +35,9 @@ class CobaltSync:
     # How long to wait for a service to start before retrying an HTTP request
     wait_timeout = 5
 
+    # Release parser connections periodically, even when a query keeps failing.
+    request_timeout = 30
+
     sleeptime = 2
 
     # Query for the whoami expiration checks
@@ -555,12 +558,22 @@ async def do_POST(request):
     if connector is None:
         cobalt_sync_log.info("connector is none\n")
     else:
-        await connector.handle_data(data)
+        try:
+            async with asyncio.timeout(connector.request_timeout):
+                await connector.handle_data(data)
+        except TimeoutError:
+            cobalt_sync_log.warning("Event delivery timed out; returning 503 so the parser can retry")
+            return web.Response(status=503)
     return web.Response(status=201)
 
 
 async def do_Checkin(request):
-    await connector._create_initial_entry()
+    try:
+        async with asyncio.timeout(connector.request_timeout):
+            await connector._create_initial_entry()
+    except TimeoutError:
+        cobalt_sync_log.warning("Check-in timed out; returning 503 so the parser can retry")
+        return web.Response(status=503)
     return web.Response(status=200)
 
 
@@ -579,4 +592,5 @@ async def main():
         await asyncio.sleep(3600)
 
 
-asyncio.run(main())
+if __name__ == "__main__":
+    asyncio.run(main())
