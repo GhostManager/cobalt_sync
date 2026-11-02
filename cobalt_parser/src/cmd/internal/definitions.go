@@ -98,7 +98,7 @@ func (c *RLHTTPClient) Do(req *http.Request) (*http.Response, error) {
 // NewClient return http client with a ratelimiter
 func NewClient(rl *rate.Limiter) *RLHTTPClient {
 	c := &RLHTTPClient{
-		client:      http.DefaultClient,
+		client:      client,
 		Ratelimiter: rl,
 	}
 	return c

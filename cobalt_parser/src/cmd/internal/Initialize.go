@@ -2,12 +2,13 @@ package internal
 
 // @its_a_feature_ 8/30/2023
 import (
-	"crypto/tls"
-	"github.com/fsnotify/fsnotify"
-	"golang.org/x/time/rate"
 	"log"
+	"net"
 	"net/http"
 	"time"
+
+	"github.com/fsnotify/fsnotify"
+	"golang.org/x/time/rate"
 )
 
 var events map[string]*beacon
@@ -22,13 +23,16 @@ var donePrintingEventsChannel chan bool
 var getEventsChannel chan bool
 var doneGetEventsChannel chan map[string]beacon
 var tr = &http.Transport{
-	TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
-	MaxIdleConns:    10,
-	MaxConnsPerHost: 10,
-	//IdleConnTimeout: 1 * time.Nanosecond,
+	DialContext: (&net.Dialer{
+		Timeout:   5 * time.Second,
+		KeepAlive: 30 * time.Second,
+	}).DialContext,
+	MaxIdleConns:        10,
+	MaxIdleConnsPerHost: 10,
+	MaxConnsPerHost:     10,
 }
 var client = &http.Client{
-	Timeout:   5 * time.Second,
+	// Wait for cobalt_web's delayed Ghostwriter retries without abandoning the request.
 	Transport: tr,
 }
 var limitingHTTPClient *RLHTTPClient
@@ -40,7 +44,7 @@ var watcher *fsnotify.Watcher
 
 func Initialize() {
 	var err error
-	rl := rate.NewLimiter(20, 100) // 100 events per second with a max burst of 500
+	rl := rate.NewLimiter(10, 50) // 10 requests per second with a max burst of 50
 	limitingHTTPClient = NewClient(rl)
 	watcher, err = fsnotify.NewWatcher()
 	if err != nil {
